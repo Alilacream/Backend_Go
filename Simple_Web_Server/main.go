@@ -1,12 +1,21 @@
 package main
 
 import (
+	"fmt"
+	"log"
 	"net/http"
-	"simple_web_server/routes"
 )
 
+type RequestData struct {
+	Username string `json:"username"`
+}
+
+func helloWorld(w http.ResponseWriter, r *http.Request) {
+	fmt.Fprint(w, "hello world :(")
+}
+
 func main() {
-	root := http.Dir("./Simple_Web_Server")
-	fileServer := http.FileServer(root)
-	routes.Routing(&fileServer)
+	fmt.Println("Listening in Port 8080")
+	http.HandleFunc("/", helloWorld)
+	log.Fatal(http.ListenAndServe(":8080", nil))
 }
