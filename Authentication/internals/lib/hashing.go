@@ -1,10 +1,6 @@
 package lib
 
 import (
-	"crypto/rand"
-	"encoding/base64"
-	"log"
-
 	"golang.org/x/crypto/bcrypt" //nolint
 )
 
@@ -15,14 +11,7 @@ func HashPassword(plainText string) (string, error) {
 }
 
 // checks the equality between the password and the hashed version
-func CheckPassword(password, hashedOne string) bool {
-	return bcrypt.CompareHashAndPassword([]byte(password), []byte(hashedOne)) == nil
-}
-
-func GenerateTok(length int) string {
-	bytes := make([]byte, length)
-	if _, err := rand.Read(bytes); err != nil {
-		log.Fatalln("[ERROR]: failed to generate a new token: ", err)
-	}
-	return base64.URLEncoding.EncodeToString(bytes)
+func CheckPassword(hashedPass, password string) bool {
+	// NOTE: i miss-placed the varialbes
+	return bcrypt.CompareHashAndPassword([]byte(hashedPass), []byte(password)) == nil
 }

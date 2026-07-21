@@ -11,7 +11,7 @@ import (
 
 var users = map[string]models.Login{}
 
-func Register(w http.ResponseWriter, r *http.Request) {
+func register(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		http.Error(w, "Only POST methods are allowed", http.StatusMethodNotAllowed)
 		return
@@ -39,29 +39,36 @@ func login(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Only POST methods are allowed", http.StatusMethodNotAllowed)
 		return
 	}
+	if err := r.ParseForm(); err != nil {
+		http.Error(w, "Couldn't process Request", http.StatusNotAcceptable)
+		return
+	}
 	username := r.FormValue("username")
 	password := r.FormValue("password")
 	user, ok := users[username]
+	// conditions: one for user's existance, the other is for the password
 	if !ok {
-		http.Error(w, "User does not exist", http.StatusConflict)
+		http.Error(w, "User Does not Exist ", http.StatusConflict)
 		return
 	}
-	if !lib.CheckPassword(password, user.HashedPassword) {
-		http.Error(w, "False Password", http.StatusConflict)
+
+	if !lib.CheckPassword(user.HashedPassword, password) {
+		http.Error(w, "Password False", http.StatusConflict)
 		return
 	}
+
 	sessionToken := lib.GenerateTok(10)
 	csrfToken := lib.GenerateTok(32)
 	// setting the session token in every request the user sends
 	http.SetCookie(w, &http.Cookie{
-		Name:     "sessionId",
+		Name:     "session_token",
 		Value:    sessionToken,
 		Expires:  time.Now().Add(24 * time.Hour),
 		HttpOnly: true, // inaccesable via client side (no js manipulation)
 	})
 	// setting csrf token preventing malicious csrf attacks
 	http.SetCookie(w, &http.Cookie{
-		Name:     "csrfToken",
+		Name:     "csrf_token",
 		Value:    csrfToken,
 		Expires:  time.Now().Add(24 * time.Hour),
 		HttpOnly: false, // accesable when client side is rendered
@@ -72,15 +79,37 @@ func login(w http.ResponseWriter, r *http.Request) {
 
 	users[username] = user
 
-	fmt.Fprintf(w, "You're logged")
+	fmt.Fprintf(w, "You're logged!")
 }
 
-// func logout(w http.ResponseWriter, r *http.Request) {}
+func logout(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		http.Error(w, "Only POST methods are allowed", http.StatusMethodNotAllowed)
+		return
+	}
+	if err := r.ParseForm(); err != nil {
+		http.Error(w, "Couldn't process Request", http.StatusNotAcceptable)
+		return
+	}
+	username := r.FormValue("username")
+	user, ok := users[username]
+	if !ok {
+		http.Error(w, "You've miss inputed you're name!", http.StatusConflict)
+		return
+	}
+	user = models.Login{
+		HashedPassword: user.HashedPassword,
+		SessionToken:   "",
+		CSRFToken:      "",
+	}
+	users[username] = user
+	fmt.Fprintf(w, "%s logged out!", username)
+}
 
 func Routes() {
-	http.HandleFunc("/register", Register)
+	http.HandleFunc("/register", register)
 	http.HandleFunc("/login", login)
-	//	http.HandleFunc("/logout", handler.logout)
+	http.HandleFunc("/logout", logout)
 	//	http.HandleFunc("/protected",handler.protected)
 	http.ListenAndServe(":8080", nil)
 }
