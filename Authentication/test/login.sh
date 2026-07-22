@@ -8,4 +8,4 @@ elif [$# -eq 1]; then
 fi
 
 curl -X POST http://localhost:8080/login \
-  -d "username:$1&password:$2"
+  -d "username=$1&password=$2"

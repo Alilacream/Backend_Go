@@ -2,9 +2,12 @@ package main
 
 import (
 	"fmt"
+	"log"
 	"net/http"
 	"time"
 
+	"github.com/alilacream/auth/errors"
+	"github.com/alilacream/auth/internals/handlers"
 	"github.com/alilacream/auth/internals/lib"
 	"github.com/alilacream/auth/models"
 )
@@ -31,7 +34,7 @@ func register(w http.ResponseWriter, r *http.Request) {
 	users[username] = models.Login{
 		HashedPassword: hashedPass,
 	}
-	fmt.Fprintln(w, "Done created the user hh")
+	fmt.Fprintf(w, "New user registered %s\n", username)
 }
 
 func login(w http.ResponseWriter, r *http.Request) {
@@ -59,6 +62,7 @@ func login(w http.ResponseWriter, r *http.Request) {
 
 	sessionToken := lib.GenerateTok(10)
 	csrfToken := lib.GenerateTok(32)
+	log.Printf("For testing Purposes, CSRFToken: %s", csrfToken)
 	// setting the session token in every request the user sends
 	http.SetCookie(w, &http.Cookie{
 		Name:     "session_token",
@@ -72,8 +76,8 @@ func login(w http.ResponseWriter, r *http.Request) {
 		Value:    csrfToken,
 		Expires:  time.Now().Add(24 * time.Hour),
 		HttpOnly: false, // accesable when client side is rendered
-
 	})
+
 	user.SessionToken = sessionToken
 	user.CSRFToken = csrfToken
 
@@ -83,12 +87,8 @@ func login(w http.ResponseWriter, r *http.Request) {
 }
 
 func logout(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodPost {
-		http.Error(w, "Only POST methods are allowed", http.StatusMethodNotAllowed)
-		return
-	}
 	if err := r.ParseForm(); err != nil {
-		http.Error(w, "Couldn't process Request", http.StatusNotAcceptable)
+		errors.DisplayErr(w, "Parse")
 		return
 	}
 	username := r.FormValue("username")
@@ -97,6 +97,20 @@ func logout(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "You've miss inputed you're name!", http.StatusConflict)
 		return
 	}
+	// expiring the session token
+	http.SetCookie(w, &http.Cookie{
+		Name:     "session_token",
+		Value:    "",
+		Expires:  time.Now(),
+		HttpOnly: true,
+	})
+	// expiring the csrf Token
+	http.SetCookie(w, &http.Cookie{
+		Name:     "csrf_token",
+		Value:    "",
+		Expires:  time.Now(),
+		HttpOnly: false,
+	})
 	user = models.Login{
 		HashedPassword: user.HashedPassword,
 		SessionToken:   "",
@@ -106,11 +120,25 @@ func logout(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintf(w, "%s logged out!", username)
 }
 
+// TODO: add a condition to check if the session token already exists
+func welcome(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		errors.DisplayErr(w, "Method")
+		return
+	}
+	if err := handlers.Authorize(users, r); err != nil {
+		http.Error(w, "Unauthorized Action", http.StatusUnauthorized)
+		return
+	}
+
+	fmt.Fprintf(w, "Welcome to my server :D")
+}
+
 func Routes() {
 	http.HandleFunc("/register", register)
 	http.HandleFunc("/login", login)
 	http.HandleFunc("/logout", logout)
-	//	http.HandleFunc("/protected",handler.protected)
+	http.HandleFunc("/welcome", welcome)
 	http.ListenAndServe(":8080", nil)
 }
 
