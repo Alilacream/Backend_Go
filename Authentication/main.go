@@ -101,14 +101,14 @@ func logout(w http.ResponseWriter, r *http.Request) {
 	http.SetCookie(w, &http.Cookie{
 		Name:     "session_token",
 		Value:    "",
-		Expires:  time.Now(),
+		Expires:  time.Now().Add(-time.Hour),
 		HttpOnly: true,
 	})
 	// expiring the csrf Token
 	http.SetCookie(w, &http.Cookie{
 		Name:     "csrf_token",
 		Value:    "",
-		Expires:  time.Now(),
+		Expires:  time.Now().Add(-time.Hour),
 		HttpOnly: false,
 	})
 	user = models.Login{
@@ -126,7 +126,7 @@ func welcome(w http.ResponseWriter, r *http.Request) {
 		errors.DisplayErr(w, "Method")
 		return
 	}
-	if err := handlers.Authorize(users, r); err != nil {
+	if err := handlers.Authorize(&users, r); err != nil {
 		http.Error(w, "Unauthorized Action", http.StatusUnauthorized)
 		return
 	}
