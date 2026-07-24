@@ -17,6 +17,12 @@ func DisplayErr(w http.ResponseWriter, err string) {
 // switch case for possible errors
 func Errors(w http.ResponseWriter, err string) *models.HTTPError {
 	switch err {
+	case "Internal":
+		return new(models.HTTPError{
+			Writer:  w,
+			ErrStat: err,
+			Status:  http.StatusInternalServerError,
+		})
 	case "UnAuthorized":
 		return new(models.HTTPError{
 			Writer:  w,

@@ -130,6 +130,7 @@ func welcome(w http.ResponseWriter, r *http.Request) {
 		errors.DisplayErr(w, "Method")
 		return
 	}
+
 	if err := handlers.Authorize(&users, r); err != nil {
 		http.Error(w, "Unauthorized Action", http.StatusUnauthorized)
 		return
