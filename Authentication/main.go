@@ -140,10 +140,10 @@ func welcome(w http.ResponseWriter, r *http.Request) {
 }
 
 func Routes() {
-	http.HandleFunc("/register", register)
-	http.HandleFunc("/login", login)
-	http.HandleFunc("/logout", logout)
-	http.HandleFunc("/welcome", welcome)
+	http.HandleFunc("/register", handlers.RecoveryMiddleWare(register))
+	http.HandleFunc("/login", handlers.RecoveryMiddleWare(login))
+	http.HandleFunc("/logout", handlers.RecoveryMiddleWare(logout))
+	http.HandleFunc("/welcome", handlers.RecoveryMiddleWare(welcome))
 	http.ListenAndServe(":8080", nil)
 }
 
