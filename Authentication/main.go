@@ -91,6 +91,10 @@ func logout(w http.ResponseWriter, r *http.Request) {
 		errors.DisplayErr(w, "Parse")
 		return
 	}
+	if err := handlers.Authorize(&users, r); err != nil {
+		errors.DisplayErr(w, "UnAuthorized")
+		return
+	}
 	username := r.FormValue("username")
 	user, ok := users[username]
 	if !ok {
