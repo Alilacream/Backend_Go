@@ -19,7 +19,7 @@ var (
 	static = 0
 )
 
-func getNewId() int {
+func getNewID() int {
 	static++
 	return static
 }
@@ -76,7 +76,8 @@ func InsertUser(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "User already Exists", http.StatusMethodNotAllowed)
 		return
 	}
-	person.ID = getNewId()
+
+	person.ID = getNewID()
 	people = append(people, person)
 	w.Write([]byte("New user registered"))
 }
