@@ -1,10 +1,9 @@
 package api
 
 import (
-	"net/http"
-
 	"alilacream/jwt/handler"
 	"alilacream/jwt/model"
+	"net/http"
 )
 
 var users *map[string]model.User
@@ -27,11 +26,12 @@ func NewServerApi(addr string, mux *http.ServeMux) *Api {
 }
 
 func (a *Api) Routes() {
-	a.srv.mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+	router := a.srv.mux
+	router.HandleFunc("GET /", func(w http.ResponseWriter, r *http.Request) {
 		w.Write([]byte("Welcome to the server once again"))
 	})
-	a.srv.mux.HandleFunc("/register", handler.Register(users))
-	a.srv.mux.HandleFunc("/login", handler.Login(users))
+	router.HandleFunc("POST /register", handler.Register(users))
+	router.HandleFunc("POST /login", handler.Login(users))
 }
 
 func (a *Api) Run() error {

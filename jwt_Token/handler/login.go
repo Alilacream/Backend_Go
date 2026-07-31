@@ -1,12 +1,11 @@
 package handler
 
 import (
+	"alilacream/jwt/lib"
+	"alilacream/jwt/model"
 	"encoding/json"
 	"net/http"
 	"time"
-
-	"alilacream/jwt/lib"
-	"alilacream/jwt/model"
 
 	"golang.org/x/crypto/bcrypt"
 )
@@ -38,7 +37,8 @@ func Login(user *map[string]model.User) func(w http.ResponseWriter, r *http.Requ
 			return
 		}
 		// it's propably vuln to csrf attack
-		// since jwt tokens
+		// since jwt tokens are stored in http Cookie, i can use it for localStorage with Secure attribute set as true and same origin policy
+		// => result no vulnerability
 		http.SetCookie(w, &http.Cookie{
 			Name:     "Jwt-Token",
 			Value:    jwtToken,
