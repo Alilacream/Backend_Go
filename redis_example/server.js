@@ -1,41 +1,43 @@
 const express = require('express')
 const axios = require('axios')
-const cors = require('cors')
 const redis = require('redis')
-const DEFAULT_EXPIRY = 3600
-const app = express()
-app.use(cors())
+const app = express();
+const port = 3000;
 
-const redisClient = redis.createClient()
+// 1. Create and connect Redis client
+const client = redis.createClient();
+client.on("error", (err) => console.log("Redis error =>", err));
 
-app.get("/photos", async (req, res) => {
-  const albumID = req.query.albumID
-  redisClient.get('photos', async (error, photos) => {
-    if (error) {
-      throw new Error(error)
+// 2. Define endpoint with caching logic
+app.get("/api/photos", async (req, res) => {
+  try {
+    // 3. Attempt to get data from Redis cache
+    const data = await client.get("photos");
+
+    if (data) {
+      console.log("Cache hit");
+      res.status(200).json(JSON.parse(data));
+    } else {
+      console.log("Cache miss");
+      // 4. Fetch from external API if cache miss
+      const response = await axios.get("https://jsonplaceholder.typicode.com/photos");
+      const photos = response.data;
+
+      // 5. Store data in Redis with expiration (e.g., 10 seconds)
+      await client.setEx("photos", 10, JSON.stringify(photos));
+      res.status(200).json(photos);
     }
-    if (photos !== null) {
-      console.log("cache HIT!")
-      return res.json(JSON.parse(photos))
-    }
-    console.log("Cached has been missed. but we got it now")
-    // else 
-    const { data } = await axios.get(
-      `https://jsonplaceholder.typicode.com/photos/`,
-      { params: { albumID } }
-    )
+  } catch (error) {
+    console.error(error);
+    res.status(500).send("Internal Server Error");
+  }
+});
+async function startserver() {
 
-    redisClient.setEx('photos', DEFAULT_EXPIRY, JSON.stringify(data))
-  })
+  await client.connect();
+  app.listen(port, () => {
+    console.log(`Server running at http://localhost:${port}`);
+  });
+}
+startserver()
 
-  return res.json(data)
-})
-
-app.get("/photos/:id", async (req, res) => {
-  const { data } = await axios.get(
-    `https://jsonplaceholder.typicode.com/photos/${req.params.id}`
-  )
-  return res.json(data)
-})
-console.log("listening on port 3000")
-app.listen(3000)
